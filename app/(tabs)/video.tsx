@@ -4,8 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-
-
+// Notification handler (foreground behavior)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -14,8 +13,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export default function HomeScreen() {
-  const [granted, setGranted] = useState(false);
+export default function HomeScreen(): JSX.Element {
+  const [granted, setGranted] = useState<boolean>(false);
 
   // Ask for permissions once
   useEffect(() => {
@@ -33,10 +32,16 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  const notify = async (title, body, seconds = 3, data = {}) => {
+  const notify = async (
+    title: string,
+    body: string,
+    seconds: number = 3,
+    data: Record<string, unknown> = {}
+  ): Promise<void> => {
+    const s = Math.max(1, Number.isFinite(seconds) ? Math.trunc(seconds) : 3);
     await Notifications.scheduleNotificationAsync({
       content: { title, body, data },
-      trigger: { seconds },
+      trigger: { seconds: s, repeats: false } as Notifications.TimeIntervalTriggerInput,
     });
   };
 
@@ -46,8 +51,11 @@ export default function HomeScreen() {
       <View style={styles.webviewWrap}>
         <WebView
           source={{ uri: 'https://reactnative.dev/docs/getting-started' }}
-          onLoadEnd={() => notify('WebView Loaded', 'The page finished loading.', 2)}
-          
+          onLoadEnd={() => {
+            // fire-and-forget; ignore returned Promise for TS
+            void notify('WebView Loaded', 'The page finished loading.', 2);
+          }}
+          style={{ flex: 1 }}
         />
       </View>
 
@@ -57,37 +65,38 @@ export default function HomeScreen() {
           label="Notify: Hello 👋"
           onPress={() => {
             setTimeout(() => {
-              
-              notify('Hello 👋',
-                'Your first local notification!', 2)
-              }, 1500);
+              void notify('Hello 👋', 'Your first local notification!', 2);
+            }, 1500);
           }}
           disabled={!granted}
         />
         <Pill
           label="Notify: local notification"
-          onPress={() =>{
+          onPress={() => {
             setTimeout(() => {
-              
-              notify(
-                'Local Notification',                 // title
-                'Hello! This is a delayed message.',  // body
-                4,                                    // seconds
-                { action: 'open-video' }              // data
-              )
-            }, 2000);}
-          }
+              void notify(
+                'Local Notification', // title
+                'Hello! This is a delayed message.', // body
+                4, // seconds
+                { action: 'open-video' } // data
+              );
+            }, 2000);
+          }}
           disabled={!granted}
         />
-
-       
       </View>
     </View>
   );
 }
 
 /* --------- Reusable pill button --------- */
-function Pill({ label, onPress, disabled }) {
+type PillProps = {
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+};
+
+function Pill({ label, onPress, disabled }: PillProps): JSX.Element {
   return (
     <Pressable
       onPress={onPress}
