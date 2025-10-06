@@ -35,7 +35,6 @@ Two buttons trigger distinct local notifications with a short delay (2–4 secon
 
 Uses expo-notifications for scheduling and permission handling.
 
-Notifications appear even when the app is in the background.
 
 Permission request handled automatically on first load.
 
